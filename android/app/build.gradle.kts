@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 plugins {
-    id("com.android.application")
+    id("com.example.pgi_app")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
