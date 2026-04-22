@@ -12,7 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   
-  lucide_icons: ^1.0.0
+  lucide_icons: ^0.257.0
   google_fonts: ^6.1.0
   file_picker: ^8.0.0
   excel: ^3.0.0
