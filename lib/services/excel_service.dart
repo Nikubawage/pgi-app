@@ -1,49 +1,77 @@
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../models/beneficiary.dart';
+import 'dart:io';
+import '../models/person.dart';
 
 class ExcelService {
-  static Future<void> importExcelData() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx'],
-    );
 
-    if (result != null && result.files.single.path != null) {
-      var bytes = File(result.files.single.path!).readAsBytesSync();
-      var excel = Excel.decodeBytes(bytes);
-      
-      var box = Hive.box<Beneficiary>('beneficiaries');
-      await box.clear();
+  static List<Person> parseExcel(File file) {
+    var bytes = file.readAsBytesSync();
+    var excel = Excel.decodeBytes(bytes);
 
-      for (var table in excel.tables.keys) {
-        var rows = excel.tables[table]!.rows;
-        
-        for (int i = 1; i < rows.length; i++) {
-          var row = rows[i];
-          if (row[0] == null) continue;
+    var sheet = excel.tables[excel.tables.keys.first]!;
 
-          String schemeString = row[6]?.value?.toString() ?? '';
-          List<String> parsedSchemes = schemeString.isEmpty 
-              ? [] 
-              : schemeString.split(',').map((e) => e.trim()).toList();
+    // 🔥 Map for grouping persons
+    Map<String, Person> personMap = {};
 
-          final beneficiary = Beneficiary(
-            name: row[0]?.value?.toString() ?? 'Unknown',
-            age: int.tryParse(row[1]?.value?.toString() ?? '0') ?? 0,
-            village: row[2]?.value?.toString() ?? '',
-            taluka: row[3]?.value?.toString() ?? '',
-            district: row[4]?.value?.toString() ?? '',
-            electionCircle: row[5]?.value?.toString() ?? '',
-            schemes: parsedSchemes,
-          );
-          
-          await box.add(beneficiary);
-        }
-        break; 
+    for (int i = 1; i < sheet.maxRows; i++) {
+      var row = sheet.row(i);
+
+      if (row.isEmpty) continue;
+
+      // 📊 Column mapping (based on your Excel)
+      String name = getValue(row, 2);
+      String mobile = getValue(row, 4);
+      String aadhaar = getValue(row, 5);
+      String scheme = getValue(row, 6);
+      String village = getValue(row, 9);
+      String taluka = getValue(row, 10);
+      String district = getValue(row, 11);
+      String gender = getValue(row, 17);
+      String disability = getValue(row, 18);
+
+      double amount =
+          double.tryParse(getValue(row, 16)) ?? 0.0;
+
+      // 🔑 UNIQUE KEY LOGIC (VERY IMPORTANT)
+      String key = "";
+
+      if (aadhaar.isNotEmpty) {
+        key = aadhaar;
+      } else if (mobile.isNotEmpty) {
+        key = mobile;
+      } else {
+        key = "$name-$village";
       }
+
+      // 🧠 Create new person if not exists
+      if (!personMap.containsKey(key)) {
+        personMap[key] = Person(
+          name: name,
+          mobile: mobile,
+          aadhaar: aadhaar,
+          village: village,
+          taluka: taluka,
+          district: district,
+          gender: gender,
+          disabilityType: disability,
+        );
+      }
+
+      var person = personMap[key]!;
+
+      // ➕ Add scheme (no duplicate)
+      person.addScheme(scheme);
+
+      // ➕ Add amount
+      person.addAmount(amount);
     }
+
+    return personMap.values.toList();
+  }
+
+  // 🔒 Safe cell value getter
+  static String getValue(List<Data?> row, int index) {
+    if (index < 0 || index >= row.length) return "";
+    return row[index]?.value.toString().trim() ?? "";
   }
 }

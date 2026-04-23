@@ -1,34 +1,28 @@
-import 'package:hive/hive.dart';
-
-part 'beneficiary.g.dart';
-
-@HiveType(typeId: 0)
-class Beneficiary extends HiveObject {
-  @HiveField(0)
-  final String name;
-  @HiveField(1)
-  final int age;
-  @HiveField(2)
-  final String village;
-  @HiveField(3)
-  final String taluka;
-  @HiveField(4)
-  final String district;
-  @HiveField(5)
-  final String electionCircle;
-  @HiveField(6)
-  final List<String> schemes;
+class Beneficiary {
+  final String beneficiaryName;
+  final String aadhaarNo;
+  final String villageName;
+  final String schemeName;
+  final String talukaName;
+  final String districtName;
 
   Beneficiary({
-    required this.name,
-    required this.age,
-    required this.village,
-    required this.taluka,
-    required this.district,
-    required this.electionCircle,
-    required this.schemes,
+    required this.beneficiaryName,
+    required this.aadhaarNo,
+    required this.villageName,
+    required this.schemeName,
+    required this.talukaName,
+    required this.districtName,
   });
 
-  int get schemeCount => schemes.length;
-  bool get isHighBeneficiary => schemeCount >= 3;
+  Beneficiary copyWith({String? schemeName}) {
+    return Beneficiary(
+      beneficiaryName: beneficiaryName,
+      aadhaarNo: aadhaarNo,
+      villageName: villageName,
+      schemeName: schemeName ?? this.schemeName,
+      talukaName: talukaName,
+      districtName: districtName,
+    );
+  }
 }
